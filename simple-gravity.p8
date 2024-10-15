@@ -25,9 +25,8 @@ function _draw()
 	draw_sprite(player)
 	draw_target()
 	draw_bullets()
+	camera_follow()
 	print(player.state,32,60, 7)
-	mx,my = mouse.pos()
-	print(my,32,50,7)
 end
 -->8
 // world logic
@@ -53,6 +52,14 @@ function bullet_travel()
 		if (b.x >= 120 or b.x <= -1 or b.y >= floor+5 or b.y <= -1) then
 			del(bullets,b)
 		end
+	end
+end
+
+function camera_follow()
+	if (player.x > peek2(0x5f28) + 70) then
+		camera(player.x)
+	elseif (player.x < peek2(0x5f28)) then
+		camera(player.x-70)
 	end
 end
 -->8
@@ -139,9 +146,9 @@ function move(unit)
 	end
 	
 	// actually change character values
-	if (unit.x + x_increment >= 112) then
-		unit.x = 112
-	elseif (unit.x + x_increment <= 0) then
+	//if (unit.x + x_increment >= 112) then
+		//unit.x = 112
+	if (unit.x + x_increment <= 0) then
 		unit.x = 0
 	else
 		unit.x += x_increment
