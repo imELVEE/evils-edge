@@ -4,39 +4,7 @@ __lua__
 function _init()
 	cls()
 	floor = 100
-	player = {
-		x = 10,
-		y = floor,
-		flip_bool = false,
-		state = 'idle',
-		gravity = true,
-		jumps = 2,
-		
-		idle_frames = {2,4},
-		idle_frame = 1,
-		idle_inc = 0.05,
-		idle_limit = 3,
-		
-		run_frames = {32,34,36,38,40,42,44,46},
-		run_frame = 1,
-		run_inc = 0.25,
-		run_limit = 8.9,
-		
-		
-		crouch_frames = {6},
-		
-		jump_cycle = 0,
-		cycle_limit = 8,
-		jump_frames = {
-			[1] = {8,10},
-			[2] = {12,14},
-			[3] = {64,66}
-		},
-		jump_style = rnd(jump_frames),
-		jump_frame = 1,
-		jump_inc = 0.1,
-		jump_limit = 3,
-	}
+	init_player()
 end
 
 function _update()
@@ -61,7 +29,7 @@ function gravity(unit)
 
 	if (unit.gravity) then
 		if (unit.y < floor) then
-			unit.y += 3
+			unit.y += 5
 		else
 			unit.y = floor
 			unit.jump_cycle = 0
@@ -147,30 +115,77 @@ function move(unit)
 end
 
 function jump(unit)
+	// randomize jump every call on floor
 	if (unit.y == floor) then
 		unit.jump_style = rnd(unit.jump_frames)
 	end
 
+	// double jump reset
 	if (unit.jumps > 0 and btn(2) and unit.jump_cycle > 2) then
 		unit.jump_style = rnd(unit.jump_frames)
-		unit.jumps -= 1
+		unit.jumps = 0
 		unit.jump_cycle = 0;
 	end
 
+	// initial jump
 	if (btn(2)) then
 		unit.state = 'jump'
+		if (unit.jumps == 2) then
+			unit.jumps = 1
+		end
 	end
 	
+	// jump gravity
 	if (unit.state == 'jump' and unit.jump_cycle < unit.cycle_limit) then
 		unit.gravity = false
 		unit.jump_cycle += 1
-		unit.y -= (8-unit.jump_cycle)
+		unit.y -= (10-unit.jump_cycle*1.25)
 	end
 end	
 		
 		
 		
 		
+-->8
+// init functions
+
+// player init
+function init_player()
+	player = {
+		x = 10,
+		y = floor,
+		flip_bool = false,
+		state = 'idle',
+		gravity = true,
+		jumps = 2,
+		
+		idle_frames = {2,4},
+		idle_frame = 1,
+		idle_inc = 0.05,
+		idle_limit = 3,
+		
+		run_frames = {32,34,36,38,40,42,44,46},
+		run_frame = 1,
+		run_inc = 0.25,
+		run_limit = 8.9,
+		
+		
+		crouch_frames = {6},
+		
+		jump_cycle = 0,
+		cycle_limit = 8,
+		jump_frames = {
+			[1] = {8,10},
+			[2] = {12,14},
+			[3] = {64,66}
+		},
+		jump_style = rnd(jump_frames),
+		jump_frame = 1,
+		jump_inc = 0.1,
+		jump_limit = 3,
+	}
+	return player
+end
 __gfx__
 0000000000000000fffffffff00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 0000000000000000fffff0f00000fffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffff00fffff
