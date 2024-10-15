@@ -147,7 +147,7 @@ function jump(unit)
 	if (unit.state == 'jump' and unit.jump_cycle < unit.cycle_limit) then
 		unit.gravity = false
 		unit.jump_cycle += 1
-		unit.y -= 5
+		unit.y -= (8-unit.jump_cycle)
 	end
 end	
 		
