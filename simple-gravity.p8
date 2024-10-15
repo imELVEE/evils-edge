@@ -6,12 +6,18 @@ function _init()
 	floor = 100
 	init_player()
 	mouse.init()
+	
+	bullets = {}
 end
 
 function _update()
+	gravity(player)
+	bullet_travel()
+	//bullets_clean()
+
 	move(player)
 	jump(player)
-	gravity(player)
+	shoot(player)
 end
 
 function _draw()
@@ -19,8 +25,10 @@ function _draw()
 	map()
 	draw_sprite(player)
 	draw_target()
+	draw_bullets()
 	print(player.state,32,60, 7)
-	print(player.jumps,32,50, 7)
+	mx,my = mouse.pos()
+	print(my,32,50,7)
 end
 -->8
 // world logic
@@ -35,6 +43,16 @@ function gravity(unit)
 		else
 			unit.y = floor
 			unit.jump_cycle = 0
+		end
+	end
+end
+
+function bullet_travel()
+	for i,b in ipairs(bullets) do
+		b.x += b.x_inc
+		b.y = b.formula(b.x)
+		if (b.x >= 120 or b.x <= -1 or b.y >= floor+5 or b.y <= -1) then
+			del(bullets,b)
 		end
 	end
 end
@@ -87,7 +105,17 @@ end
 
 function draw_target()
 	mx,my = mouse.pos()
-	spr(1,mx,my)
+	if (mouse.button() == 1) then
+		spr(17,mx,my)
+	else
+		spr(1,mx,my)
+	end
+end
+
+function draw_bullets()
+	for i,b in ipairs(bullets) do
+		spr(16,b.x,b.y)
+	end
 end
 -->8
 // char logic
@@ -148,9 +176,12 @@ function jump(unit)
 	end
 end	
 		
-		
-		
-		
+function shoot(unit)
+	if (mouse.button() == 1) then
+		mx,my = mouse.pos()
+		add(bullets,init_bullet(unit.x,unit.y,mx,my))	
+	end
+end	
 -->8
 // init functions
 
@@ -191,6 +222,18 @@ function init_player()
 	}
 	return player
 end
+
+function init_bullet(startx,starty,endx,endy)
+	bullet = {
+		x = startx,
+		y = starty,
+		formula = function(x_pos)
+			return ((endy-starty)/(endx-startx))*(x_pos-endx)+endy
+		end,
+		x_inc = (endx-startx)/(abs(endy-starty)+abs(endx-startx)) * 2
+	}
+	return bullet
+end
 -->8
 //mouse
 //from: https://www.lexaloffle.com/bbs/?tid=3549
@@ -224,14 +267,14 @@ __gfx__
 0070070080088008ffffff88fffffffffffffff777fffffffffff0f00000fffffffffff07b7ffffffffffff07b7ffffffffff8f7772ffffffffff8f7772fffff
 0000000008000080fffff8802fffffffffffff80fffffffffffffff0070ffffffffffff877fffffffffffff877ffffffffffff8828ffffffffffff8828ffffff
 0000000000888800ffff8f808ffffffffffff8802ffffffffffffff07b7fffffffffff802fffffffffffff802fffffffffffff80ffffffffffffff80ffffffff
-0000000000000000ffff8f802fffffffffff8f808ffffffffffffff777fffffffffff88052fffffffffff88052ffffffffffff80ffffffffffffff80ffffffff
-0000000000000000fffff8802fffffffffff8f802ffffffffffff8882fffffffffffff8c022fffffffffff8c022fffffffffff80ffffffffffffff80ffffffff
-0000000000000000ffffff7cf7fffffffffff87c2fffffffffff8f802ffffffffffffff872fffffffffffff872ffffffffffff8cffffffffffffff8cffffffff
-0000000000000000ffffffccffffffffffffffccf7ffffffffff8f80f2ffffffffffff0c7dffffffffffff0c7dffffffffffffcfdfffffffffffffcfdfffffff
-0000000000000000ffffffcdffffffffffffffcdfffffffffffff7fcdf7fffffffffff00dfffffffffffff00dffffffffffffcfffcfffffffffffcfffcffffff
-0000000000000000ffffffcdffffffffffffffcdffffffffffffffffcdfffffffffffff0fffffffffffffff0ffffffffff0fcfffffdf0fffff0fcfffffdf0fff
-0000000000000000ffffff00ffffffffffffff00ffffffffffffff0c0ffffffffffffffffffffffffffffffffffffffffff0fffffff0fffffff0fffffff0ffff
-0000000000000000ffffff000fffffffffffff000fffffffffffff00f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+0009900088000088ffff8f802fffffffffff8f808ffffffffffffff777fffffffffff88052fffffffffff88052ffffffffffff80ffffffffffffff80ffffffff
+000aa00080888808fffff8802fffffffffff8f802ffffffffffff8882fffffffffffff8c022fffffffffff8c022fffffffffff80ffffffffffffff80ffffffff
+00a99a0008800880ffffff7cf7fffffffffff87c2fffffffffff8f802ffffffffffffff872fffffffffffff872ffffffffffff8cffffffffffffff8cffffffff
+9a9aa9a908088080ffffffccffffffffffffffccf7ffffffffff8f80f2ffffffffffff0c7dffffffffffff0c7dffffffffffffcfdfffffffffffffcfdfffffff
+9a9aa9a908088080ffffffcdffffffffffffffcdfffffffffffff7fcdf7fffffffffff00dfffffffffffff00dffffffffffffcfffcfffffffffffcfffcffffff
+00a99a0008800880ffffffcdffffffffffffffcdffffffffffffffffcdfffffffffffff0fffffffffffffff0ffffffffff0fcfffffdf0fffff0fcfffffdf0fff
+000aa00080888808ffffff00ffffffffffffff00ffffffffffffff0c0ffffffffffffffffffffffffffffffffffffffffff0fffffff0fffffff0fffffff0ffff
+0009900088000088ffffff000fffffffffffff000fffffffffffff00f0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 fffffffff00ffffffffffffffffffffffffffffff00ffffffffffffffffffffffffffffff00ffffffffffffffffffffffffffffff00fffffffffffffffffffff
 fff0f0f00000fffffffffffff00fffffffff0ff00000fffffffffffff00ffffffff0f0f00000fffffffffffff00fffffffff0ff00000fffffffffffff00fffff
