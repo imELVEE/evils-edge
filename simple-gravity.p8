@@ -5,6 +5,7 @@ function _init()
 	cls()
 	floor = 100
 	init_player()
+	mouse.init()
 end
 
 function _update()
@@ -17,6 +18,7 @@ function _draw()
 	cls()
 	map()
 	draw_sprite(player)
+	draw_target()
 	print(player.state,32,60, 7)
 	print(player.jumps,32,50, 7)
 end
@@ -82,6 +84,11 @@ function cycle_jump_frames(unit)
 		end
 	end
 end
+
+function draw_target()
+	mx,my = mouse.pos()
+	spr(1,mx,my)
+end
 -->8
 // char logic
 function move(unit)
@@ -118,23 +125,21 @@ function jump(unit)
 	// randomize jump every call on floor
 	if (unit.y == floor) then
 		unit.jump_style = rnd(unit.jump_frames)
+		unit.jumps = 2
 	end
-
-	// double jump reset
-	if (unit.jumps > 0 and btn(2) and unit.jump_cycle > 2) then
-		unit.jump_style = rnd(unit.jump_frames)
-		unit.jumps = 0
-		unit.jump_cycle = 0;
-	end
-
+	
 	// initial jump
 	if (btn(2)) then
 		unit.state = 'jump'
-		if (unit.jumps == 2) then
-			unit.jumps = 1
-		end
 	end
-	
+
+	// double jump reset
+	if (unit.jumps > 0 and btnp(2)) then
+		unit.jump_style = rnd(unit.jump_frames)
+		unit.jumps -= 1
+		unit.jump_cycle = 0
+	end
+
 	// jump gravity
 	if (unit.state == 'jump' and unit.jump_cycle < unit.cycle_limit) then
 		unit.gravity = false
@@ -186,15 +191,39 @@ function init_player()
 	}
 	return player
 end
+-->8
+//mouse
+//from: https://www.lexaloffle.com/bbs/?tid=3549
+
+mouse = {
+  init = function()
+    poke(0x5f2d, 1)
+  end,
+  -- return int:x, int:y, onscreen:bool
+  pos = function()
+    local x,y = stat(32)-1,stat(33)-1
+    return stat(32)-1,stat(33)-1
+  end,
+  -- return int:button [0..4]
+  -- 0 .. no button
+  -- 1 .. left
+  -- 2 .. right
+  -- 4 .. middle
+  button = function()
+    return stat(34)
+  end,
+}
+
+
 __gfx__
-0000000000000000fffffffff00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-0000000000000000fffff0f00000fffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffff00fffff
-0070070000000000ffff0ff0070fffffffff00f00000ffffffffffffffffffffffff0ffff00ffffffffffffff00fffffff70f0f00000f7ffff7f0ff00000f7ff
-0007700000000000ffff0ff07b7ffffffff0fff0070fffffffff0ffffffffffffff0f0f00000fffffff0f0f00000fffffff80ff0070f2ffffff0f0f0070f2fff
-0007700000000000fffffff777fffffffffffff07b7fffffffff0ffff00ffffffffffff0070fffffffff0ff0070fffffffff8ff07b72ffffffff8ff07b72ffff
-0070070000000000ffffff88fffffffffffffff777fffffffffff0f00000fffffffffff07b7ffffffffffff07b7ffffffffff8f7772ffffffffff8f7772fffff
-0000000000000000fffff8802fffffffffffff80fffffffffffffff0070ffffffffffff877fffffffffffff877ffffffffffff8828ffffffffffff8828ffffff
-0000000000000000ffff8f808ffffffffffff8802ffffffffffffff07b7fffffffffff802fffffffffffff802fffffffffffff80ffffffffffffff80ffffffff
+0000000000888800fffffffff00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+0000000008000080fffff0f00000fffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffff00fffff
+0070070080088008ffff0ff0070fffffffff00f00000ffffffffffffffffffffffff0ffff00ffffffffffffff00fffffff70f0f00000f7ffff7f0ff00000f7ff
+0007700080800808ffff0ff07b7ffffffff0fff0070fffffffff0ffffffffffffff0f0f00000fffffff0f0f00000fffffff80ff0070f2ffffff0f0f0070f2fff
+0007700080800808fffffff777fffffffffffff07b7fffffffff0ffff00ffffffffffff0070fffffffff0ff0070fffffffff8ff07b72ffffffff8ff07b72ffff
+0070070080088008ffffff88fffffffffffffff777fffffffffff0f00000fffffffffff07b7ffffffffffff07b7ffffffffff8f7772ffffffffff8f7772fffff
+0000000008000080fffff8802fffffffffffff80fffffffffffffff0070ffffffffffff877fffffffffffff877ffffffffffff8828ffffffffffff8828ffffff
+0000000000888800ffff8f808ffffffffffff8802ffffffffffffff07b7fffffffffff802fffffffffffff802fffffffffffff80ffffffffffffff80ffffffff
 0000000000000000ffff8f802fffffffffff8f808ffffffffffffff777fffffffffff88052fffffffffff88052ffffffffffff80ffffffffffffff80ffffffff
 0000000000000000fffff8802fffffffffff8f802ffffffffffff8882fffffffffffff8c022fffffffffff8c022fffffffffff80ffffffffffffff80ffffffff
 0000000000000000ffffff7cf7fffffffffff87c2fffffffffff8f802ffffffffffffff872fffffffffffff872ffffffffffff8cffffffffffffff8cffffffff
