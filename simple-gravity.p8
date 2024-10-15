@@ -10,6 +10,7 @@ function _init()
 		flip_bool = false,
 		state = 'idle',
 		gravity = true,
+		jumps = 2,
 		
 		idle_frames = {2,4},
 		idle_frame = 1,
@@ -49,6 +50,7 @@ function _draw()
 	map()
 	draw_sprite(player)
 	print(player.state,32,60, 7)
+	print(player.jumps,32,50, 7)
 end
 -->8
 // world logic
@@ -119,6 +121,7 @@ function move(unit)
 	
 	if (unit.y == floor) then
 		unit.state = 'move'
+		unit.jumps = 2
 	end
 	
 	//right
@@ -146,6 +149,12 @@ end
 function jump(unit)
 	if (unit.y == floor) then
 		unit.jump_style = rnd(unit.jump_frames)
+	end
+
+	if (unit.jumps > 0 and btn(2) and unit.jump_cycle > 2) then
+		unit.jump_style = rnd(unit.jump_frames)
+		unit.jumps -= 1
+		unit.jump_cycle = 0;
 	end
 
 	if (btn(2)) then
