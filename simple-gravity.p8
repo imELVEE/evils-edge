@@ -13,7 +13,6 @@ end
 function _update()
 	gravity(player)
 	bullet_travel()
-	//bullets_clean()
 
 	move(player)
 	jump(player)
@@ -177,9 +176,12 @@ function jump(unit)
 end	
 		
 function shoot(unit)
-	if (mouse.button() == 1) then
+	if (mouse.button() == 1 and unit.shoot_timer == unit.shoot_delay) then
 		mx,my = mouse.pos()
-		add(bullets,init_bullet(unit.x,unit.y,mx,my))	
+		add(bullets,init_bullet(unit.x,unit.y,mx,my))
+		unit.shoot_timer = 1
+	elseif (unit.shoot_timer < unit.shoot_delay) then
+		unit.shoot_timer += 1	
 	end
 end	
 -->8
@@ -219,6 +221,9 @@ function init_player()
 		jump_frame = 1,
 		jump_inc = 0.1,
 		jump_limit = 3,
+		
+		shoot_delay = 5,
+		shoot_timer = 5,
 	}
 	return player
 end
@@ -230,7 +235,7 @@ function init_bullet(startx,starty,endx,endy)
 		formula = function(x_pos)
 			return ((endy-starty)/(endx-startx))*(x_pos-endx)+endy
 		end,
-		x_inc = (endx-startx)/(abs(endy-starty)+abs(endx-startx)) * 2
+		x_inc = (endx-startx)/(abs(endy-starty)+abs(endx-startx)) * 15
 	}
 	return bullet
 end
