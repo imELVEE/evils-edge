@@ -26,15 +26,15 @@ function _init()
 		
 		jump_cycle = 0,
 		cycle_limit = 8,
-		jump_styles = 3,
 		jump_frames = {
 			[1] = {8,10},
 			[2] = {12,14},
 			[3] = {64,66}
 		},
+		jump_style = rnd(jump_frames),
 		jump_frame = 1,
 		jump_inc = 0.1,
-		jump_limit = 3
+		jump_limit = 3,
 	}
 end
 
@@ -102,10 +102,14 @@ function cycle_move_frames(unit)
 end
 
 function cycle_jump_frames(unit)
-	spr(unit.jump_frames[1][flr(unit.jump_frame)], unit.x, unit.y, 2, 2, unit.flip_bool)
-	unit.jump_frame += unit.jump_inc
-	if (unit.jump_frame >= unit.jump_limit) then
-		unit.jump_frame = 1
+	if (unit.y >= floor-3) then
+		spr(unit.crouch_frames[1], unit.x, unit.y, 2, 2, unit.flip_bool)
+	else
+		spr(unit.jump_style[flr(unit.jump_frame)], unit.x, unit.y, 2, 2, unit.flip_bool)
+		unit.jump_frame += unit.jump_inc
+		if (unit.jump_frame >= unit.jump_limit) then
+			unit.jump_frame = 1
+		end
 	end
 end
 -->8
@@ -140,6 +144,10 @@ function move(unit)
 end
 
 function jump(unit)
+	if (unit.y == floor) then
+		unit.jump_style = rnd(unit.jump_frames)
+	end
+
 	if (btn(2)) then
 		unit.state = 'jump'
 	end
