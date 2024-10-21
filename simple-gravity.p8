@@ -8,6 +8,7 @@ function _init()
 	mouse.init()
 	
 	bullets = {}
+	grapple_points = {init_grapple(80,40,40)}
 	
 	init_level_1()
 end
@@ -36,21 +37,24 @@ function _draw()
 	draw_sprite(player)
 	draw_target()
 	draw_bullets()
-	//print(player.state,32,60, 7)
-	//print(player.x,32,80,7)
-	//if (player.x >= 10) then
-	//	print(floor,player.x,floor,7)
-	//end
+	draw_grapple(grapple_points[1])
+
+	print(player.state,32,60, 7)
+	print(player.x,32,80,7)
+	print (player.gravity, player.x + 20, player.y, 7)
+	if (player.x >= 10) then
+		print(floor,player.x,floor,7)
+	end
 end
 -->8
 // world logic
 function gravity(unit)
-	if (unit.jump_cycle >= unit.cycle_limit) then
+	if (unit.jump_cycle >= unit.cycle_limit or unit.state != 'jump') then
 		unit.gravity = true
 	end
 
 	if (unit.gravity) then
-		if (unit.y <= floor+5 and unit.y >= floor-5) then
+		if (floor_check(unit)) then
 			unit.jump_cycle = 0
 			unit.y = floor
 		else
@@ -135,17 +139,18 @@ end
 
 function draw_target()
 	mx,my = mouse.pos()
-	if (mouse.button() == 1) then
-		spr(17,mx,my)
-	else
-		spr(1,mx,my)
-	end
+	rect(mx,my,mx+9,my+9,7)
 end
 
 function draw_bullets()
 	for i,b in ipairs(bullets) do
 		spr(16,b.x,b.y)
 	end
+end
+
+function draw_grapple(grap)
+	spr(1, grap.x-4, grap.y-4)
+	circ(grap.x, grap.y, grap.radius, 10)
 end
 
 function draw_map(floor_map)
@@ -165,7 +170,7 @@ end
 function move(unit)
 	x_increment = 0
 	
-	if (unit.y == floor) then
+	if (floor_check(unit)) then
 		unit.state = 'move'
 		unit.jumps = 2
 	end
@@ -194,7 +199,7 @@ end
 
 function jump(unit)
 	// randomize jump every call on floor
-	if (unit.y == floor) then
+	if (floor_check(unit)) then
 		unit.jump_style = rnd(unit.jump_frames)
 		unit.jumps = 2
 	end
@@ -283,6 +288,19 @@ function init_bullet(startx,starty,endx,endy)
 	}
 	return bullet
 end
+
+ function init_grapple(gx,gy,gradius)
+	grapple = {
+		x = gx,
+		y = gy,
+		radius = gradius,
+		momentum = 0,
+		distance = 0,
+		attached = false,
+	}
+	return grapple
+end
+
 -->8
 //mouse
 //from: https://www.lexaloffle.com/bbs/?tid=3549
@@ -325,6 +343,14 @@ function init_level_1()
 	
 	return level_1_floor;
 end
+
+-->8
+//Helper functions
+
+function floor_check(unit)
+	return (unit.y <= floor and unit.y >= floor-5)
+end
+
 __gfx__
 0000000000888800fffffffff00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 0000000008000080fffff0f00000fffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00ffffffffffffff00fffff
