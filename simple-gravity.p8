@@ -22,6 +22,7 @@ function _update()
 	gravity(player)
 	bullet_travel()
 
+	grapple(player)
 	move(player)
 	jump(player)
 	shoot(player)
@@ -37,14 +38,16 @@ function _draw()
 	draw_sprite(player)
 	draw_target()
 	draw_bullets()
-	draw_grapple(grapple_points[1])
+	draw_grapple_points(grapple_points)
+	draw_grapple_line(player)
 
-	print(player.state,32,60, 7)
-	print(player.x,32,80,7)
-	print (player.gravity, player.x + 20, player.y, 7)
-	if (player.x >= 10) then
-		print(floor,player.x,floor,7)
-	end
+	//print(player.grapple_to, player.x, player.y, 7)
+	//print(player.state,32,60, 7)
+	//print(player.x,32,80,7)
+	//print (player.gravity, player.x + 20, player.y, 7)
+	//if (player.x >= 10) then
+	//	print(floor,player.x,floor,7)
+	//end
 end
 -->8
 // world logic
@@ -148,9 +151,18 @@ function draw_bullets()
 	end
 end
 
-function draw_grapple(grap)
-	spr(1, grap.x-4, grap.y-4)
-	circ(grap.x, grap.y, grap.radius, 10)
+function draw_grapple_points()
+	for i,g in ipairs(grapple_points) do
+		spr(1, g.x-4, g.y-4)
+		circ(g.x, g.y, g.radius, 10)
+	end
+end
+
+function draw_grapple_line(unit)
+	if (unit.grapple_to != nil) then
+		local g_point = unit.grapple_to
+		line(unit.x, unit.y, g_point.x, g_point.y, 7)
+	end
 end
 
 function draw_map(floor_map)
@@ -224,6 +236,15 @@ function jump(unit)
 	end
 end	
 		
+function grapple(unit)
+	g_point = checkInGrappleDist(unit)
+	if (g_point != nil) then
+		unit.grapple_to = g_point
+	else
+		unit.grapple_to = nil
+	end
+end
+
 function shoot(unit)
 	if (mouse.button() == 1 and unit.shoot_timer == unit.shoot_delay) then
 		mx,my = mouse.pos()
@@ -273,6 +294,8 @@ function init_player()
 		
 		shoot_delay = 5,
 		shoot_timer = 5,
+
+		grapple_to = nil,
 	}
 	return player
 end
@@ -290,15 +313,14 @@ function init_bullet(startx,starty,endx,endy)
 end
 
  function init_grapple(gx,gy,gradius)
-	grapple = {
+	grapple_point = {
 		x = gx,
 		y = gy,
 		radius = gradius,
-		momentum = 0,
 		distance = 0,
 		attached = false,
 	}
-	return grapple
+	return grapple_point;
 end
 
 -->8
@@ -349,6 +371,17 @@ end
 
 function floor_check(unit)
 	return (unit.y <= floor and unit.y >= floor-5)
+end
+
+function checkInGrappleDist(unit)
+	print('function called', unit.x, unit.y, 7)
+	for i,g in ipairs(grapple_points) do
+		if ((unit.x - g.x)^2 + (unit.y - g.y)^2 < g.radius^2) then
+			print('true', g.x, g.y, 7)
+			return g;
+		end
+	end
+	return nil;
 end
 
 __gfx__
