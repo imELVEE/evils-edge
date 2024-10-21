@@ -25,6 +25,7 @@ function _update()
 	jump(player)
 	shoot(player)
 	
+	camera_follow()
 	restart_check()
 end
 
@@ -35,12 +36,11 @@ function _draw()
 	draw_sprite(player)
 	draw_target()
 	draw_bullets()
-	camera_follow()
-	print(player.state,32,60, 7)
-	print(player.x,32,80,7)
-	if (player.x >= 10) then
-		print(floor,player.x,floor,7)
-	end
+	//print(player.state,32,60, 7)
+	//print(player.x,32,80,7)
+	//if (player.x >= 10) then
+	//	print(floor,player.x,floor,7)
+	//end
 end
 -->8
 // world logic
@@ -70,11 +70,15 @@ function bullet_travel()
 end
 
 function camera_follow()
-	if (player.x > peek2(0x5f28) + 70) then
-		camera(player.x)
-	elseif (player.x < peek2(0x5f28)) then
-		camera(player.x-70)
+	cam_x = player.x  - 34
+	if (cam_x < 0) then
+		cam_x = 0
 	end
+	if (cam_x > 1024-34) then
+		cam_x = 1024-34
+	end
+	
+	camera(cam_x)
 end
 
 function restart_check()
