@@ -1,31 +1,30 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
+
+p8cos = cos function cos(angle) return p8cos(angle/(3.1415*2)) end
+p8sin = sin function sin(angle) return -p8sin(angle/(3.1415*2)) end
+
 function _init()
 	cls()
+	
 	floor = 100
 	init_player()
-	mouse.init()
 	
-	bullets = {}
-	grapple_points = {init_grapple(80,40,40)}
-	
-	init_level_1()
+	init_level()
 end
 
 function _update()
 	if (player.x > 120) then
-		floor = level_1_floor[ceil(player.x/8)]*8 - 15
+		floor = level.level_floor[ceil(player.x/8)]*8 - 15
 	else
 		floor = 100
 	end
 	gravity(player)
-	bullet_travel()
 
 	grapple(player)
 	move(player)
 	jump(player)
-	shoot(player)
 	
 	camera_follow()
 	restart_check()
@@ -34,14 +33,13 @@ end
 function _draw()
 	cls()
 	map()
-	draw_map(level_1_floor)
+	draw_map(level.level_floor)
 	draw_sprite(player)
-	draw_target()
-	draw_bullets()
-	draw_grapple_points(grapple_points)
+	draw_grapple_points(level.grapple_points)
 	draw_grapple_line(player)
 
 	//print(player.grapple_to, player.x, player.y, 7)
+	//print(player.momentum, player.x, player.y, 2)
 	//print(player.state,32,60, 7)
 	//print(player.x,32,80,7)
 	//print (player.gravity, player.x + 20, player.y, 7)
@@ -66,16 +64,6 @@ function gravity(unit)
 	end
 end
 
-function bullet_travel()
-	for i,b in ipairs(bullets) do
-		b.x += b.x_inc
-		b.y = b.formula(b.x)
-		if (b.x >= 120 or b.x <= -1 or b.y >= floor+5 or b.y <= -1) then
-			del(bullets,b)
-		end
-	end
-end
-
 function camera_follow()
 	cam_x = player.x  - 34
 	if (cam_x < 0) then
@@ -89,7 +77,7 @@ function camera_follow()
 end
 
 function restart_check()
-	if (player.y > 120) then
+	if (player.y > 140) then
 		_init()
 	end
 end
@@ -140,19 +128,8 @@ function cycle_jump_frames(unit)
 	end
 end
 
-function draw_target()
-	mx,my = mouse.pos()
-	rect(mx,my,mx+9,my+9,7)
-end
-
-function draw_bullets()
-	for i,b in ipairs(bullets) do
-		spr(16,b.x,b.y)
-	end
-end
-
 function draw_grapple_points()
-	for i,g in ipairs(grapple_points) do
+	for i,g in ipairs(level.grapple_points) do
 		spr(1, g.x-4, g.y-4)
 		circ(g.x, g.y, g.radius, 10)
 	end
@@ -182,30 +159,35 @@ end
 function move(unit)
 	x_increment = 0
 	
-	if (floor_check(unit)) then
-		unit.state = 'move'
-		unit.jumps = 2
-	end
-	
-	//right
-	if (btn(1)) then
-		unit.flip_bool = false
-		x_increment = 3
-	// left
-	elseif (btn(0)) then
-		unit.flip_bool = true
-		x_increment = -3
-	elseif (unit.state == 'move') then
-		unit.state = 'idle'
-	end
-	
-	// actually change character values
-	//if (unit.x + x_increment >= 112) then
-		//unit.x = 112
-	if (unit.x + x_increment <= 0) then
-		unit.x = 0
-	else
-		unit.x += x_increment
+	if (unit.grapple_to == nil) then
+		momentum_add(unit)
+
+
+		if (floor_check(unit)) then
+			unit.state = 'move'
+			unit.jumps = 2
+		end
+		
+		//right
+		if (btn(1)) then
+			unit.flip_bool = false
+			x_increment = 3
+		// left
+		elseif (btn(0)) then
+			unit.flip_bool = true
+			x_increment = -3
+		elseif (unit.state == 'move') then
+			unit.state = 'idle'
+		end
+		
+		// actually change character values
+		//if (unit.x + x_increment >= 112) then
+			//unit.x = 112
+		if (unit.x + x_increment <= 0) then
+			unit.x = 0
+		else
+			unit.x += x_increment
+		end
 	end
 end
 
@@ -239,21 +221,72 @@ end
 function grapple(unit)
 	g_point = checkInGrappleDist(unit)
 	if (g_point != nil) then
-		unit.grapple_to = g_point
+		if (btn(4)) then
+			unit.jumps = 2
+			unit.grapple_to = g_point
+			unit.gravity = false
+			if (g_point.distance  == nil) then
+				g_point.distance = distance(unit.x, unit.y, g_point.x, g_point.y)
+				unit.last_distance = g_point.distance
+			end
+
+			if (unit.x < g_point.x) then
+				unit.momentum += 5
+			else
+				unit.momentum -= 5
+			end
+
+			swing(unit, g_point)
+		else
+			unit.grapple_to = nil
+			unit.gravity = true
+			g_point.distance = nil
+		end
+	
 	else
 		unit.grapple_to = nil
+		unit.gravity = true
 	end
 end
 
-function shoot(unit)
-	if (mouse.button() == 1 and unit.shoot_timer == unit.shoot_delay) then
-		mx,my = mouse.pos()
-		add(bullets,init_bullet(unit.x,unit.y,mx,my))
-		unit.shoot_timer = 1
-	elseif (unit.shoot_timer < unit.shoot_delay) then
-		unit.shoot_timer += 1	
+function swing(unit, g_pt)
+	ang = unit.momentum / g_pt.distance
+
+	if (unit.x < g_pt.x) then
+		unit.x = g_point.x + cos(ang) * (-1*g_pt.distance)
+	else 
+		unit.x = g_point.x + cos(ang) * (1*g_pt.distance)
 	end
-end	
+	unit.y = g_point.y + sin(ang) * (1*g_pt.distance)
+end
+
+function momentum_add(unit)
+	if (unit.last_distance == 0) then
+		if (unit.momentum > 0) then 
+			unit.momentum = (5*unit.last_distance*2) - unit.momentum
+		else
+			unit.momentum = -(5*unit.last_distance*2) - unit.momentum
+		end
+		unit.last_distance = 0
+	end
+
+	if (unit.momentum != 0) then
+		if (unit.momentum > 0) then
+			unit.x += 4
+		else
+			unit.x -= 4
+		end
+		unit.y -= 1
+	end
+	if (unit.momentum > 2) then
+		unit.momentum -= 4
+	elseif (unit.momentum < -2) then
+		unit.momentum += 4
+	else
+		unit.momentum = 0
+	end
+end
+
 -->8
 // init functions
 
@@ -296,20 +329,10 @@ function init_player()
 		shoot_timer = 5,
 
 		grapple_to = nil,
+		momentum = 0,
+		last_distance = 0,
 	}
 	return player
-end
-
-function init_bullet(startx,starty,endx,endy)
-	bullet = {
-		x = startx,
-		y = starty,
-		formula = function(x_pos)
-			return ((endy-starty)/(endx-startx))*(x_pos-endx)+endy
-		end,
-		x_inc = (endx-startx)/(abs(endy-starty)+abs(endx-startx)) * 15
-	}
-	return bullet
 end
 
  function init_grapple(gx,gy,gradius)
@@ -317,53 +340,36 @@ end
 		x = gx,
 		y = gy,
 		radius = gradius,
-		distance = 0,
+		distance = nil,
 		attached = false,
 	}
 	return grapple_point;
 end
 
 -->8
-//mouse
-//from: https://www.lexaloffle.com/bbs/?tid=3549
-
-mouse = {
-  init = function()
-    poke(0x5f2d, 1)
-  end,
-  -- return int:x, int:y, onscreen:bool
-  pos = function()
-    local x,y = stat(32)-1,stat(33)-1
-    return stat(32)-1,stat(33)-1
-  end,
-  -- return int:button [0..4]
-  -- 0 .. no button
-  -- 1 .. left
-  -- 2 .. right
-  -- 4 .. middle
-  button = function()
-    return stat(34)
-  end,
-}
-
-
--->8
 // map gen
 
-function init_level_1()
-	level_1_floor = {}
+function init_level()
+	level = {
+		level_floor = {},
+		grapple_points = {}
+	}
+	
 	for lvl_x = 1, 120 do
 		y = rnd(14)
 		if (y < 3) then
-		 y = -1
+		 y = 200
 		end
-		length = rnd(4+2)
+		length = rnd(6)
 		for x_it = 0, length do
-			add(level_1_floor,flr(y))
+			add(level.level_floor,flr(y))
+		end
+		if (length >= 5 and y == 200) then
+			add(level.grapple_points, init_grapple(lvl_x*8, 60, 45))
 		end
 	end
 	
-	return level_1_floor;
+	return level;
 end
 
 -->8
@@ -374,14 +380,19 @@ function floor_check(unit)
 end
 
 function checkInGrappleDist(unit)
-	print('function called', unit.x, unit.y, 7)
-	for i,g in ipairs(grapple_points) do
-		if ((unit.x - g.x)^2 + (unit.y - g.y)^2 < g.radius^2) then
-			print('true', g.x, g.y, 7)
-			return g;
+	in_range = nil
+	for i,g in ipairs(level.grapple_points) do
+		if ((unit.x - g.x)^2 + (unit.y - g.y)^2 < g.radius^2 and unit.x < g.x + g.radius and unit.x > g.x - g.radius and unit.y < g.y + g.radius and unit.y > g.y - g.radius) then
+			in_range = g;
+		else
+			g.distance = nil
 		end
 	end
-	return nil;
+	return in_range;
+end
+
+function distance(x1,y1,x2,y2)
+	return sqrt((x2-x1)^2 + (y2-y1)^2);
 end
 
 __gfx__
